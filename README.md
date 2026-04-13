@@ -1,160 +1,69 @@
-# 🐔 Poultry Farm Management App
+# Poultry Farm Management System
 
-A complete Flutter mobile app for managing a poultry farm — customers, labour, expenses, and income — all stored locally on the device.
+![Flutter](https://img.shields.io/badge/Flutter-%2302569B.svg?style=for-the-badge&logo=Flutter&logoColor=white)
+![Dart](https://img.shields.io/badge/dart-%230175C2.svg?style=for-the-badge&logo=dart&logoColor=white)
+![SQLite](https://img.shields.io/badge/sqlite-%2307405e.svg?style=for-the-badge&logo=sqlite&logoColor=white)
 
----
+A comprehensive, offline-first mobile application designed to streamline the operational and financial management of poultry farms. Built with **Flutter** and **Dart**, this app replaces manual ledger tracking with a digital dashboard, offering real-time insights into farm metrics, expenses, and overall profitability.
 
-## 📁 Project Structure
+## 🌟 Key Features
 
-```
-lib/
-├── main.dart                     # App entry point + Splash screen
-├── models/
-│   ├── customer_model.dart       # Customer data model
-│   ├── labour_model.dart         # Labour data model
-│   └── farm_data_model.dart      # Farm records model
-├── services/
-│   ├── database_service.dart     # SQLite database (all CRUD)
-│   ├── auth_service.dart         # Login / PIN auth (SHA-256 hashed)
-│   └── app_theme.dart            # Theme, colors, constants
-└── screens/
-    ├── login_screen.dart         # Login with Admin ID + Password
-    ├── setup_screen.dart         # First-time account setup
-    ├── dashboard_screen.dart     # Main menu (3 options)
-    ├── admin_screen.dart         # Admin panel: finances + farm data
-    ├── customer_screen.dart      # Customer CRUD + photo + auto-calc
-    └── labour_screen.dart        # Labour CRUD + wage tracking
-```
+*   **Financial Dashboard & Analytics:** Real-time visualization of business metrics, net profit, total expenses (feed, medicine, wages), and livestock inventory using interactive charts (`fl_chart`).
+*   **Comprehensive Inventory Tracking:** Track and manage daily farm inputs including chicken feed, medicines, and livestock (chick additions and mortality rates).
+*   **Sales & Customer Management:** Keep records of customer transactions, sales volume, and outstanding balances. Automatically calculate profit margins based on expenditures vs. sales.
+*   **Labor & Wage Management:** Track employee information, daily wages, total days worked, and remaining payments.
+*   **Robust Local Database:** Highly optimized `SQLite` database architecture designed for complex relational queries and totally offline usage. No internet connection required!
+*   **Export & Reporting:** Generate and share comprehensive financial and operational reports as **CSV, Excel, and PDF** files for data-driven decision-making.
+*   **Secure Access:** Local PIN-based authentication ensures that sensitive financial records and business setup data remain protected under an Admin profile.
+*   **Data Backup & Restore:** Built-in tools for safely backing up the local database to the device storage to prevent data loss.
 
----
+## 🛠️ Technology Stack
 
-## 🚀 How to Set Up & Run
+*   **Frontend / UI:** Flutter (Material Design)
+*   **Programming Language:** Dart
+*   **Local Database:** `sqflite` (SQLite)
+*   **Data Visualization:** `fl_chart`
+*   **File Management & Exporting:** `path_provider`, `csv`, `pdf`, `excel`, `share_plus`
+*   **Security / Auth:** `crypto`, `shared_preferences`
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- Flutter SDK 3.0+ installed
-- Android Studio or VS Code
-- Android emulator or physical device
 
-### Steps
+*   [Flutter SDK](https://docs.flutter.dev/get-started/install) (version >=3.0.0 <4.0.0)
+*   [Android Studio](https://developer.android.com/studio) or [VS Code](https://code.visualstudio.com/) for development
+*   An Android or iOS Emulator, or a physical device for testing.
 
-```bash
-# 1. Copy the project folder
-cd poultry_farm_app
+### Installation
 
-# 2. Install dependencies
-flutter pub get
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/ashish9825/Poultry-Farm-Management.git
+    ```
 
-# 3. Run on device/emulator
-flutter run
-```
+2.  **Navigate to the project directory:**
+    ```bash
+    cd Poultry-Farm-Management
+    ```
 
----
+3.  **Install dependencies:**
+    ```bash
+    flutter pub get
+    ```
 
-## 🔐 Security Features
+4.  **Run the application:**
+    ```bash
+    flutter run
+    ```
 
-| Feature | Implementation |
-|---|---|
-| Login | Admin ID + Password |
-| Admin Panel | Separate PIN (SHA-256 hashed) |
-| Password storage | SHA-256 hash via `crypto` package |
-| Local persistence | `shared_preferences` (auth) + SQLite (data) |
+## 📸 Screenshots
+*(You can add screenshots of your app here to make the README more engaging! Create an `assets/screenshots` folder and link them here.)*
 
----
+## 🤝 Contributing
 
-## 📱 App Flow
+Contributions, issues, and feature requests are welcome! 
+Feel free to check the [issues page](https://github.com/ashish9825/Poultry-Farm-Management/issues).
 
-```
-App Launch → Splash Screen
-    ↓
-First time? → Setup Screen (create Admin ID, Password, PIN)
-    ↓
-Login Screen (Admin ID + Password)
-    ↓
-Dashboard
-├── Admin Panel (PIN required)
-│   ├── Financial Summary (Income, Expense, Profit, Labour Cost)
-│   └── Farm Records (Add/Edit/Delete: chicks, medicine, grains)
-├── Manage Customers
-│   ├── Search customers
-│   ├── Customer list with payment status
-│   └── Add/Edit/Delete customer (with photo, auto-calculated totals)
-└── Manage Labour
-    ├── Search labour
-    ├── Staff list with wage summary
-    └── Add/Edit/Delete labour (with wage tracking)
-```
+## 📄 License
 
----
-
-## 💾 Data Backup Options
-
-Since data is stored locally in SQLite:
-
-### Option A: Manual Backup
-- Copy the database file from device storage
-- Path: `/data/data/com.yourapp/databases/poultry_farm.db`
-
-### Option B: Add Firebase (Recommended for cloud backup)
-Add to `pubspec.yaml`:
-```yaml
-firebase_core: ^2.24.2
-cloud_firestore: ^4.14.0
-firebase_auth: ^4.15.3
-```
-Then sync local SQLite data to Firestore periodically.
-
-### Option C: Google Drive Backup
-```yaml
-googleapis: ^11.3.0
-google_sign_in: ^6.2.1
-```
-
----
-
-## 📦 Dependencies Used
-
-| Package | Purpose |
-|---|---|
-| `sqflite` | Local SQLite database |
-| `path_provider` | Get app storage paths |
-| `shared_preferences` | Store auth state |
-| `crypto` | SHA-256 password hashing |
-| `image_picker` | Pick customer photos |
-| `intl` | Date and number formatting |
-| `uuid` | Generate unique IDs |
-| `fl_chart` | Charts (ready to use) |
-
----
-
-## ✅ Features Checklist
-
-- [x] Secure login (Admin ID + Password)
-- [x] Separate Admin PIN for admin panel
-- [x] First-time setup screen
-- [x] Dashboard with 4 menu options
-- [x] Admin Panel: Income/Expense/Profit summary (live bar chart)
-- [x] Admin Panel: Farm data (chicks, medicine, grains) CRUD
-- [x] Customer CRUD with photo support
-- [x] Customer auto-calculated totals (average, remaining)
-- [x] Customer payment status (Paid / Pending)
-- [x] Customer search
-- [x] Labour CRUD with wage tracking
-- [x] Labour payment status and pending amounts
-- [x] Labour search
-- [x] Admin panel auto-updates from customer & labour data
-- [x] **Reports screen with bar chart & pie chart**
-- [x] **Top customers ranking**
-- [x] **Full JSON backup (share via WhatsApp, email, etc.)**
-- [x] **Export Customers to CSV spreadsheet**
-- [x] **Export Labour to CSV spreadsheet**
-- [x] Pull-to-refresh on all screens
-- [x] Confirmation dialogs before delete
-- [x] Beautiful green farm-themed UI
-
----
-
-## 🔧 Customize
-
-- **App Name**: Change in `pubspec.yaml` → `name` and `android/app/src/main/AndroidManifest.xml` → `android:label`
-- **Theme Colors**: Edit `lib/services/app_theme.dart`
-- **Currency**: Replace `Rs.` in screens with your currency symbol
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
