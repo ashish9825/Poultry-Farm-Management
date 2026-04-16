@@ -10,6 +10,7 @@ class FarmData {
   final double grainsAmount;
   final double otherExpenses;
   final String notes;
+  final String paymentMode;
   final String createdAt;
 
   FarmData({
@@ -22,6 +23,7 @@ class FarmData {
     required this.grainsAmount,
     required this.otherExpenses,
     required this.notes,
+    this.paymentMode = 'Cash',
     String? createdAt,
   })  : id = id ?? const Uuid().v4(),
         createdAt = createdAt ?? DateTime.now().toIso8601String();
@@ -38,6 +40,7 @@ class FarmData {
         'grainsAmount': grainsAmount,
         'otherExpenses': otherExpenses,
         'notes': notes,
+        'paymentMode': paymentMode,
         'createdAt': createdAt,
       };
 
@@ -51,6 +54,7 @@ class FarmData {
         grainsAmount: (map['grainsAmount'] as num?)?.toDouble() ?? 0,
         otherExpenses: (map['otherExpenses'] as num?)?.toDouble() ?? 0,
         notes: map['notes'] ?? '',
+        paymentMode: map['paymentMode'] ?? 'Cash',
         createdAt: map['createdAt'],
       );
 }

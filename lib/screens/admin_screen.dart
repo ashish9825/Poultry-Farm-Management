@@ -349,8 +349,8 @@ class _AdminScreenState extends State<AdminScreen>
             ),
             const SizedBox(height: 10),
             _expenseRow('Chicks Amount', data.chicksAmount),
-            _expenseRow('Medicine', data.medicineAmount),
-            _expenseRow('Grains/Feed', data.grainsAmount),
+            if (data.medicineAmount > 0) _expenseRow('Medicine', data.medicineAmount),
+            if (data.grainsAmount > 0) _expenseRow('Grains/Feed', data.grainsAmount),
             if (data.otherExpenses > 0)
               _expenseRow('Other', data.otherExpenses),
             if (data.notes.isNotEmpty) ...[
@@ -433,13 +433,12 @@ class _AdminScreenState extends State<AdminScreen>
         text: existing != null && existing.numberOfChicks > 0
             ? (existing.chicksAmount / existing.numberOfChicks).toStringAsFixed(2)
             : '');
-    final medCtrl =
-        TextEditingController(text: existing?.medicineAmount.toString() ?? '');
-    final grainCtrl =
-        TextEditingController(text: existing?.grainsAmount.toString() ?? '');
     final otherCtrl =
         TextEditingController(text: existing?.otherExpenses.toString() ?? '');
     final notesCtrl = TextEditingController(text: existing?.notes ?? '');
+    String paymentMode = existing?.paymentMode ?? 'Cash';
+    const paymentMethods = ['Cash', 'Bank Transfer', 'eSewa', 'Khalti', 'Cheque', 'Other'];
+    
     final formKey = GlobalKey<FormState>();
 
     await showModalBottomSheet(
@@ -458,10 +457,8 @@ class _AdminScreenState extends State<AdminScreen>
           }
 
           double getTotalExp() {
-            final med = double.tryParse(medCtrl.text) ?? 0;
-            final grain = double.tryParse(grainCtrl.text) ?? 0;
             final other = double.tryParse(otherCtrl.text) ?? 0;
-            return getChicksAmt() + med + grain + other;
+            return getChicksAmt() + other;
           }
 
           return Padding(
@@ -500,17 +497,16 @@ class _AdminScreenState extends State<AdminScreen>
                         Icons.payments_outlined,
                         isDecimal: true, onChanged: updateTotals),
                     const SizedBox(height: 12),
-                    _buildField(
-                        medCtrl, 'Medicine Amount (Rs.)', Icons.medication_rounded,
-                        isDecimal: true, onChanged: updateTotals),
-                    const SizedBox(height: 12),
-                    _buildField(
-                        grainCtrl, 'Grains/Feed Amount (Rs.)', Icons.grass_rounded,
-                        isDecimal: true, onChanged: updateTotals),
-                    const SizedBox(height: 12),
                     _buildField(otherCtrl, 'Other Expenses (Rs.)',
                         Icons.miscellaneous_services_rounded,
                         isDecimal: true, onChanged: updateTotals),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: paymentMode,
+                      decoration: const InputDecoration(labelText: 'Payment Method', prefixIcon: Icon(Icons.credit_card_rounded, color: AppTheme.primary)),
+                      items: paymentMethods.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+                      onChanged: (v) => setModalState(() => paymentMode = v ?? 'Cash'),
+                    ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: notesCtrl,
@@ -558,10 +554,11 @@ class _AdminScreenState extends State<AdminScreen>
                           breed: breedCtrl.text,
                           numberOfChicks: int.tryParse(chicksCtrl.text) ?? 0,
                           chicksAmount: getChicksAmt(),
-                          medicineAmount: double.tryParse(medCtrl.text) ?? 0,
-                          grainsAmount: double.tryParse(grainCtrl.text) ?? 0,
+                          medicineAmount: existing?.medicineAmount ?? 0, // Preserve old data if exists
+                          grainsAmount: existing?.grainsAmount ?? 0, // Preserve old data if exists
                           otherExpenses: double.tryParse(otherCtrl.text) ?? 0,
                           notes: notesCtrl.text,
+                          paymentMode: paymentMode,
                           createdAt: existing?.createdAt,
                         );
                         if (existing == null) {

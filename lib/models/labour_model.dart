@@ -11,6 +11,7 @@ class Labour {
   final double totalPaid;
   final double remainingPayment;
   final String role;
+  final String paymentMode;
   final String createdAt;
 
   Labour({
@@ -23,6 +24,7 @@ class Labour {
     required this.totalDaysWorked,
     required this.totalPaid,
     required this.role,
+    this.paymentMode = 'Cash',
     String? createdAt,
   })  : id = id ?? const Uuid().v4(),
         remainingPayment = (dailyWage * totalDaysWorked) - totalPaid,
@@ -41,6 +43,7 @@ class Labour {
         'totalPaid': totalPaid,
         'remainingPayment': remainingPayment,
         'role': role,
+        'paymentMode': paymentMode,
         'createdAt': createdAt,
       };
 
@@ -54,6 +57,7 @@ class Labour {
         totalDaysWorked: (map['totalDaysWorked'] as num?)?.toInt() ?? 0,
         totalPaid: (map['totalPaid'] as num?)?.toDouble() ?? 0,
         role: map['role'] ?? 'General Worker',
+        paymentMode: map['paymentMode'] ?? 'Cash',
         createdAt: map['createdAt'],
       );
 
@@ -66,6 +70,7 @@ class Labour {
     int? totalDaysWorked,
     double? totalPaid,
     String? role,
+    String? paymentMode,
   }) =>
       Labour(
         id: id,
@@ -77,6 +82,7 @@ class Labour {
         totalDaysWorked: totalDaysWorked ?? this.totalDaysWorked,
         totalPaid: totalPaid ?? this.totalPaid,
         role: role ?? this.role,
+        paymentMode: paymentMode ?? this.paymentMode,
         createdAt: createdAt,
       );
 }

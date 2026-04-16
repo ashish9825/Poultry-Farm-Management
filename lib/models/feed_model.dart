@@ -7,6 +7,7 @@ class Feed {
   final double quantity; // in kg or bags
   final double cost;
   final String notes;
+  final String paymentMode;
   final String createdAt;
 
   Feed({
@@ -16,6 +17,7 @@ class Feed {
     required this.quantity,
     required this.cost,
     this.notes = '',
+    this.paymentMode = 'Cash',
     String? createdAt,
   })  : id = id ?? const Uuid().v4(),
         createdAt = createdAt ?? DateTime.now().toIso8601String();
@@ -27,6 +29,7 @@ class Feed {
         'quantity': quantity,
         'cost': cost,
         'notes': notes,
+        'paymentMode': paymentMode,
         'createdAt': createdAt,
       };
 
@@ -37,6 +40,7 @@ class Feed {
         quantity: (map['quantity'] as num?)?.toDouble() ?? 0,
         cost: (map['cost'] as num?)?.toDouble() ?? 0,
         notes: map['notes'] ?? '',
+        paymentMode: map['paymentMode'] ?? 'Cash',
         createdAt: map['createdAt'],
       );
 }

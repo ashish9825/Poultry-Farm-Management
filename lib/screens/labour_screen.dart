@@ -229,21 +229,37 @@ class _LabourScreenState extends State<LabourScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Joined: ${labour.joiningDate}', style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-                Row(
-                  children: [
-                    TextButton.icon(
-                      onPressed: () => _openLabourForm(existing: labour),
-                      icon: const Icon(Icons.edit_outlined, size: 16),
-                      label: const Text('Edit'),
-                      style: TextButton.styleFrom(foregroundColor: _purple),
-                    ),
-                    TextButton.icon(
-                      onPressed: () => _deleteLabour(labour),
-                      icon: const Icon(Icons.delete_outline, size: 16),
-                      label: const Text('Delete'),
-                      style: TextButton.styleFrom(foregroundColor: AppTheme.error),
-                    ),
-                  ],
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: _purple.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.credit_card_rounded, size: 12, color: _purple),
+                      const SizedBox(width: 4),
+                      Text(labour.paymentMode, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _purple)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  onPressed: () => _openLabourForm(existing: labour),
+                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  label: const Text('Edit'),
+                  style: TextButton.styleFrom(foregroundColor: _purple),
+                ),
+                TextButton.icon(
+                  onPressed: () => _deleteLabour(labour),
+                  icon: const Icon(Icons.delete_outline, size: 16),
+                  label: const Text('Delete'),
+                  style: TextButton.styleFrom(foregroundColor: AppTheme.error),
                 ),
               ],
             ),
@@ -306,6 +322,8 @@ class _LabourScreenState extends State<LabourScreen> {
     final daysCtrl = TextEditingController(text: existing?.totalDaysWorked.toString() ?? '');
     final paidCtrl = TextEditingController(text: existing?.totalPaid.toString() ?? '');
     String role = existing?.role ?? 'General Worker';
+    String paymentMode = existing?.paymentMode ?? 'Cash';
+    const paymentMethods = ['Cash', 'Bank Transfer', 'eSewa', 'Khalti', 'Cheque', 'Other'];
 
     final calc = ValueNotifier<String>('');
     void recalc() {
@@ -359,6 +377,13 @@ class _LabourScreenState extends State<LabourScreen> {
                   const SizedBox(height: 12),
                   _field(paidCtrl, 'Amount Paid (Rs.)', Icons.account_balance_wallet_outlined, keyboard: const TextInputType.numberWithOptions(decimal: true)),
                   const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: paymentMode,
+                    decoration: const InputDecoration(labelText: 'Payment Method', prefixIcon: Icon(Icons.credit_card_rounded, color: _purple)),
+                    items: paymentMethods.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+                    onChanged: (v) => setModalState(() => paymentMode = v ?? 'Cash'),
+                  ),
+                  const SizedBox(height: 12),
                   ValueListenableBuilder<String>(
                     valueListenable: calc,
                     builder: (_, val, __) => val.isEmpty ? const SizedBox.shrink() : Container(
@@ -382,6 +407,7 @@ class _LabourScreenState extends State<LabourScreen> {
                         totalDaysWorked: int.tryParse(daysCtrl.text) ?? 0,
                         totalPaid: double.tryParse(paidCtrl.text) ?? 0,
                         role: role,
+                        paymentMode: paymentMode,
                         createdAt: existing?.createdAt,
                       );
                       if (existing == null) {

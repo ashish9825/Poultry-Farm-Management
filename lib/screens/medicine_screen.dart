@@ -119,9 +119,30 @@ class _MedicineScreenState extends State<MedicineScreen> {
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.payments_outlined, size: 16, color: AppTheme.error),
-                const SizedBox(width: 8),
-                Text('Cost: Rs. ${NumberFormat('#,##0.00').format(record.cost)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Icon(Icons.payments_outlined, size: 16, color: AppTheme.error),
+                      const SizedBox(width: 8),
+                      Text('Cost: Rs. ${NumberFormat('#,##0.00').format(record.cost)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0288D1).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.credit_card_rounded, size: 12, color: Color(0xFF0288D1)),
+                      const SizedBox(width: 4),
+                      Text(record.paymentMode, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF0288D1))),
+                    ],
+                  ),
+                ),
               ],
             ),
             if (record.notes.isNotEmpty) ...[
@@ -158,77 +179,90 @@ class _MedicineScreenState extends State<MedicineScreen> {
     final nameCtrl = TextEditingController(text: existing?.name ?? '');
     final costCtrl = TextEditingController(text: existing?.cost.toString() ?? '');
     final notesCtrl = TextEditingController(text: existing?.notes ?? '');
+    String paymentMode = existing?.paymentMode ?? 'Cash';
+
+    const paymentMethods = ['Cash', 'Bank Transfer', 'eSewa', 'Khalti', 'Cheque', 'Other'];
 
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 20, right: 20, top: 20),
-        child: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
-                const SizedBox(height: 16),
-                Text(existing == null ? 'Add Medicine' : 'Edit Medicine', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 20),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 20, right: 20, top: 20),
+          child: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+                  const SizedBox(height: 16),
+                  Text(existing == null ? 'Add Medicine' : 'Edit Medicine', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 20),
 
-                TextFormField(
-                  controller: dateCtrl,
-                  readOnly: true,
-                  decoration: const InputDecoration(labelText: 'Date', prefixIcon: Icon(Icons.calendar_today_outlined, color: Color(0xFF0288D1))),
-                  onTap: () async {
-                    final picked = await showDatePicker(context: ctx, initialDate: DateTime.tryParse(dateCtrl.text) ?? DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100));
-                    if (picked != null) dateCtrl.text = DateFormat('yyyy-MM-dd').format(picked);
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Medicine Name', prefixIcon: Icon(Icons.medical_services_outlined, color: Color(0xFF0288D1))),
-                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: costCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Total Cost (Rs.)', prefixIcon: Icon(Icons.payments_outlined, color: Color(0xFF0288D1))),
-                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: notesCtrl,
-                  maxLines: 2,
-                  decoration: const InputDecoration(labelText: 'Notes (optional)', prefixIcon: Icon(Icons.note_alt_outlined, color: Color(0xFF0288D1))),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0288D1)),
-                  onPressed: () async {
-                    if (!formKey.currentState!.validate()) return;
-                    final data = Medicine(
-                      id: existing?.id,
-                      date: dateCtrl.text,
-                      name: nameCtrl.text,
-                      cost: double.tryParse(costCtrl.text) ?? 0,
-                      notes: notesCtrl.text,
-                      createdAt: existing?.createdAt,
-                    );
-                    if (existing == null) {
-                      await DatabaseService.instance.insertMedicine(data);
-                    } else {
-                      await DatabaseService.instance.updateMedicine(data);
-                    }
-                    Navigator.pop(ctx);
-                    _loadRecords();
-                  },
-                  child: Text(existing == null ? 'ADD RECORD' : 'UPDATE RECORD'),
-                ),
-                const SizedBox(height: 20),
-              ],
+                  TextFormField(
+                    controller: dateCtrl,
+                    readOnly: true,
+                    decoration: const InputDecoration(labelText: 'Date', prefixIcon: Icon(Icons.calendar_today_outlined, color: Color(0xFF0288D1))),
+                    onTap: () async {
+                      final picked = await showDatePicker(context: ctx, initialDate: DateTime.tryParse(dateCtrl.text) ?? DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100));
+                      if (picked != null) dateCtrl.text = DateFormat('yyyy-MM-dd').format(picked);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(labelText: 'Medicine Name', prefixIcon: Icon(Icons.medical_services_outlined, color: Color(0xFF0288D1))),
+                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: costCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(labelText: 'Total Cost (Rs.)', prefixIcon: Icon(Icons.payments_outlined, color: Color(0xFF0288D1))),
+                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: paymentMode,
+                    decoration: const InputDecoration(labelText: 'Payment Method', prefixIcon: Icon(Icons.credit_card_rounded, color: Color(0xFF0288D1))),
+                    items: paymentMethods.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+                    onChanged: (v) => setModalState(() => paymentMode = v ?? 'Cash'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: notesCtrl,
+                    maxLines: 2,
+                    decoration: const InputDecoration(labelText: 'Notes (optional)', prefixIcon: Icon(Icons.note_alt_outlined, color: Color(0xFF0288D1))),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0288D1)),
+                    onPressed: () async {
+                      if (!formKey.currentState!.validate()) return;
+                      final data = Medicine(
+                        id: existing?.id,
+                        date: dateCtrl.text,
+                        name: nameCtrl.text,
+                        cost: double.tryParse(costCtrl.text) ?? 0,
+                        notes: notesCtrl.text,
+                        paymentMode: paymentMode,
+                        createdAt: existing?.createdAt,
+                      );
+                      if (existing == null) {
+                        await DatabaseService.instance.insertMedicine(data);
+                      } else {
+                        await DatabaseService.instance.updateMedicine(data);
+                      }
+                      Navigator.pop(ctx);
+                      _loadRecords();
+                    },
+                    child: Text(existing == null ? 'ADD RECORD' : 'UPDATE RECORD'),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
         ),

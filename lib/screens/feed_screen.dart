@@ -136,6 +136,22 @@ class _FeedScreenState extends State<FeedScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE65100).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.credit_card_rounded, size: 12, color: Color(0xFFE65100)),
+                  const SizedBox(width: 4),
+                  Text('Via ${record.paymentMode}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFFE65100))),
+                ],
+              ),
+            ),
             if (record.notes.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text('Note: ${record.notes}', style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13, fontStyle: FontStyle.italic)),
@@ -171,85 +187,97 @@ class _FeedScreenState extends State<FeedScreen> {
     final qtyCtrl = TextEditingController(text: existing?.quantity.toString() ?? '');
     final costCtrl = TextEditingController(text: existing?.cost.toString() ?? '');
     final notesCtrl = TextEditingController(text: existing?.notes ?? '');
+    String paymentMode = existing?.paymentMode ?? 'Cash';
+    const paymentMethods = ['Cash', 'Bank Transfer', 'eSewa', 'Khalti', 'Cheque', 'Other'];
 
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 20, right: 20, top: 20),
-        child: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
-                const SizedBox(height: 16),
-                Text(existing == null ? 'Add Feed Grains' : 'Edit Feed Grains', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 20),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 20, right: 20, top: 20),
+          child: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+                  const SizedBox(height: 16),
+                  Text(existing == null ? 'Add Feed Grains' : 'Edit Feed Grains', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 20),
 
-                TextFormField(
-                  controller: dateCtrl,
-                  readOnly: true,
-                  decoration: const InputDecoration(labelText: 'Date', prefixIcon: Icon(Icons.calendar_today_outlined, color: Color(0xFFE65100))),
-                  onTap: () async {
-                    final picked = await showDatePicker(context: ctx, initialDate: DateTime.tryParse(dateCtrl.text) ?? DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100));
-                    if (picked != null) dateCtrl.text = DateFormat('yyyy-MM-dd').format(picked);
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: typeCtrl,
-                  decoration: const InputDecoration(labelText: 'Feed Type (e.g. Starter, Grower)', prefixIcon: Icon(Icons.grass_outlined, color: Color(0xFFE65100))),
-                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: qtyCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Quantity (kg)', prefixIcon: Icon(Icons.scale_outlined, color: Color(0xFFE65100))),
-                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: costCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Total Cost (Rs.)', prefixIcon: Icon(Icons.payments_outlined, color: Color(0xFFE65100))),
-                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: notesCtrl,
-                  maxLines: 2,
-                  decoration: const InputDecoration(labelText: 'Notes (optional)', prefixIcon: Icon(Icons.note_alt_outlined, color: Color(0xFFE65100))),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE65100)),
-                  onPressed: () async {
-                    if (!formKey.currentState!.validate()) return;
-                    final data = Feed(
-                      id: existing?.id,
-                      date: dateCtrl.text,
-                      type: typeCtrl.text,
-                      quantity: double.tryParse(qtyCtrl.text) ?? 0,
-                      cost: double.tryParse(costCtrl.text) ?? 0,
-                      notes: notesCtrl.text,
-                      createdAt: existing?.createdAt,
-                    );
-                    if (existing == null) {
-                      await DatabaseService.instance.insertFeed(data);
-                    } else {
-                      await DatabaseService.instance.updateFeed(data);
-                    }
-                    Navigator.pop(ctx);
-                    _loadRecords();
-                  },
-                  child: Text(existing == null ? 'ADD RECORD' : 'UPDATE RECORD'),
-                ),
-                const SizedBox(height: 20),
-              ],
+                  TextFormField(
+                    controller: dateCtrl,
+                    readOnly: true,
+                    decoration: const InputDecoration(labelText: 'Date', prefixIcon: Icon(Icons.calendar_today_outlined, color: Color(0xFFE65100))),
+                    onTap: () async {
+                      final picked = await showDatePicker(context: ctx, initialDate: DateTime.tryParse(dateCtrl.text) ?? DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100));
+                      if (picked != null) dateCtrl.text = DateFormat('yyyy-MM-dd').format(picked);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: typeCtrl,
+                    decoration: const InputDecoration(labelText: 'Feed Type (e.g. Starter, Grower)', prefixIcon: Icon(Icons.grass_outlined, color: Color(0xFFE65100))),
+                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: qtyCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(labelText: 'Quantity (kg)', prefixIcon: Icon(Icons.scale_outlined, color: Color(0xFFE65100))),
+                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: costCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(labelText: 'Total Cost (Rs.)', prefixIcon: Icon(Icons.payments_outlined, color: Color(0xFFE65100))),
+                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: paymentMode,
+                    decoration: const InputDecoration(labelText: 'Payment Method', prefixIcon: Icon(Icons.credit_card_rounded, color: Color(0xFFE65100))),
+                    items: paymentMethods.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+                    onChanged: (v) => setModalState(() => paymentMode = v ?? 'Cash'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: notesCtrl,
+                    maxLines: 2,
+                    decoration: const InputDecoration(labelText: 'Notes (optional)', prefixIcon: Icon(Icons.note_alt_outlined, color: Color(0xFFE65100))),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE65100)),
+                    onPressed: () async {
+                      if (!formKey.currentState!.validate()) return;
+                      final data = Feed(
+                        id: existing?.id,
+                        date: dateCtrl.text,
+                        type: typeCtrl.text,
+                        quantity: double.tryParse(qtyCtrl.text) ?? 0,
+                        cost: double.tryParse(costCtrl.text) ?? 0,
+                        notes: notesCtrl.text,
+                        paymentMode: paymentMode,
+                        createdAt: existing?.createdAt,
+                      );
+                      if (existing == null) {
+                        await DatabaseService.instance.insertFeed(data);
+                      } else {
+                        await DatabaseService.instance.updateFeed(data);
+                      }
+                      Navigator.pop(ctx);
+                      _loadRecords();
+                    },
+                    child: Text(existing == null ? 'ADD RECORD' : 'UPDATE RECORD'),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
         ),

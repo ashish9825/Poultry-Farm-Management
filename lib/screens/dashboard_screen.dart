@@ -9,6 +9,8 @@ import 'reports_screen.dart';
 import 'dead_chicks_screen.dart';
 import 'medicine_screen.dart';
 import 'feed_screen.dart';
+import 'quick_update_screen.dart';
+import 'transaction_history_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -23,10 +25,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   final List<_MenuCard> _menuItems = [
     _MenuCard(title: 'Admin Panel', subtitle: 'Income, Expenses & Farm Data', icon: Icons.admin_panel_settings_rounded, color: AppTheme.primaryDark),
     _MenuCard(title: 'Manage Customers', subtitle: 'Customer records & transactions', icon: Icons.people_alt_rounded, color: Color(0xFF1565C0)),
+    _MenuCard(title: 'Quick Customer Update', subtitle: 'Search & update returning customers', icon: Icons.update_rounded, color: Color(0xFF00897B)),
     _MenuCard(title: 'Manage Dead Chicks', subtitle: 'Track dead chicks count', icon: Icons.pets, color: Color(0xFFD32F2F)),
     _MenuCard(title: 'Manage Feed Grains', subtitle: 'Track feed usage & stock', icon: Icons.grass_rounded, color: Color(0xFFE65100)),
     _MenuCard(title: 'Manage Medicine', subtitle: 'Track medicines & treatments', icon: Icons.medication_liquid_rounded, color: Color(0xFF0288D1)),
     _MenuCard(title: 'Manage Labour', subtitle: 'Staff records & wages', icon: Icons.engineering_rounded, color: Color(0xFF6A1B9A)),
+    _MenuCard(title: 'Transaction History', subtitle: 'Payments received & paid with mode info', icon: Icons.receipt_long_rounded, color: Color(0xFF37474F)),
     _MenuCard(title: 'Reports & Backup', subtitle: 'Charts, export CSV & backup data', icon: Icons.bar_chart_rounded, color: Color(0xFF00695C)),
   ];
 
@@ -60,11 +64,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     switch (index) {
       case 0: screen = const AdminScreen(); break;
       case 1: screen = const CustomerScreen(); break;
-      case 2: screen = const DeadChicksScreen(); break;
-      case 3: screen = const FeedScreen(); break;
-      case 4: screen = const MedicineScreen(); break;
-      case 5: screen = const LabourScreen(); break;
-      case 6: screen = const ReportsScreen(); break;
+      case 2: screen = const QuickUpdateScreen(); break;
+      case 3: screen = const DeadChicksScreen(); break;
+      case 4: screen = const FeedScreen(); break;
+      case 5: screen = const MedicineScreen(); break;
+      case 6: screen = const LabourScreen(); break;
+      case 7: screen = const TransactionHistoryScreen(); break;
+      case 8: screen = const ReportsScreen(); break;
       default: return;
     }
     Navigator.push(context, MaterialPageRoute(builder: (_) => screen));

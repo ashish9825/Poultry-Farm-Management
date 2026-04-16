@@ -6,6 +6,7 @@ class Medicine {
   final String name;
   final double cost;
   final String notes;
+  final String paymentMode;
   final String createdAt;
 
   Medicine({
@@ -14,6 +15,7 @@ class Medicine {
     required this.name,
     required this.cost,
     this.notes = '',
+    this.paymentMode = 'Cash',
     String? createdAt,
   })  : id = id ?? const Uuid().v4(),
         createdAt = createdAt ?? DateTime.now().toIso8601String();
@@ -24,6 +26,7 @@ class Medicine {
         'name': name,
         'cost': cost,
         'notes': notes,
+        'paymentMode': paymentMode,
         'createdAt': createdAt,
       };
 
@@ -33,6 +36,7 @@ class Medicine {
         name: map['name'] ?? '',
         cost: (map['cost'] as num?)?.toDouble() ?? 0,
         notes: map['notes'] ?? '',
+        paymentMode: map['paymentMode'] ?? 'Cash',
         createdAt: map['createdAt'],
       );
 }

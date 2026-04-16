@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:uuid/uuid.dart';
 import '../models/customer_model.dart';
 import '../models/labour_model.dart';
 import '../models/farm_data_model.dart';
@@ -22,7 +23,7 @@ class DatabaseService {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
-    return await openDatabase(path, version: 5, onCreate: _createDB, onUpgrade: _onUpgrade);
+    return await openDatabase(path, version: 8, onCreate: _createDB, onUpgrade: _onUpgrade);
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -66,6 +67,72 @@ class DatabaseService {
         )
       ''');
     }
+    if (oldVersion < 6) {
+      await db.execute('ALTER TABLE medicines ADD COLUMN paymentMode TEXT DEFAULT "Cash"');
+      await db.execute('ALTER TABLE feeds ADD COLUMN paymentMode TEXT DEFAULT "Cash"');
+      await db.execute('ALTER TABLE labours ADD COLUMN paymentMode TEXT DEFAULT "Cash"');
+    }
+    if (oldVersion < 7) {
+      await db.execute('ALTER TABLE farm_data ADD COLUMN paymentMode TEXT DEFAULT "Cash"');
+    }
+    if (oldVersion < 8) {
+      await db.execute('''
+        CREATE TABLE customer_payments (
+          id TEXT PRIMARY KEY,
+          customerId TEXT NOT NULL,
+          customerName TEXT NOT NULL,
+          amount REAL NOT NULL,
+          paymentMode TEXT NOT NULL,
+          date TEXT NOT NULL,
+          createdAt TEXT NOT NULL
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE labour_payments (
+          id TEXT PRIMARY KEY,
+          labourId TEXT NOT NULL,
+          labourName TEXT NOT NULL,
+          amount REAL NOT NULL,
+          paymentMode TEXT NOT NULL,
+          date TEXT NOT NULL,
+          createdAt TEXT NOT NULL
+        )
+      ''');
+
+      // Migrate existing customers
+      final customers = await db.query('customers');
+      for (final c in customers) {
+        final amount = (c['depositAmount'] as num?)?.toDouble() ?? 0;
+        if (amount > 0) {
+          await db.insert('customer_payments', {
+            'id': const Uuid().v4(),
+            'customerId': c['id'],
+            'customerName': c['name'],
+            'amount': amount,
+            'paymentMode': c['paymentMode'] ?? 'Cash',
+            'date': c['date'] ?? DateTime.now().toIso8601String().split('T')[0],
+            'createdAt': DateTime.now().toIso8601String(),
+          });
+        }
+      }
+
+      // Migrate existing labours
+      final labours = await db.query('labours');
+      for (final l in labours) {
+        final amount = (l['totalPaid'] as num?)?.toDouble() ?? 0;
+        if (amount > 0) {
+          await db.insert('labour_payments', {
+            'id': const Uuid().v4(),
+            'labourId': l['id'],
+            'labourName': l['name'],
+            'amount': amount,
+            'paymentMode': l['paymentMode'] ?? 'Cash',
+            'date': l['joiningDate'] ?? DateTime.now().toIso8601String().split('T')[0],
+            'createdAt': DateTime.now().toIso8601String(),
+          });
+        }
+      }
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -101,6 +168,7 @@ class DatabaseService {
         totalPaid REAL,
         remainingPayment REAL,
         role TEXT,
+        paymentMode TEXT DEFAULT "Cash",
         createdAt TEXT
       )
     ''');
@@ -116,6 +184,7 @@ class DatabaseService {
         grainsAmount REAL,
         otherExpenses REAL,
         notes TEXT,
+        paymentMode TEXT DEFAULT "Cash",
         createdAt TEXT
       )
     ''');
@@ -137,6 +206,7 @@ class DatabaseService {
         name TEXT,
         cost REAL,
         notes TEXT,
+        paymentMode TEXT DEFAULT "Cash",
         createdAt TEXT
       )
     ''');
@@ -149,6 +219,7 @@ class DatabaseService {
         quantity REAL,
         cost REAL,
         notes TEXT,
+        paymentMode TEXT DEFAULT "Cash",
         createdAt TEXT
       )
     ''');
@@ -162,6 +233,30 @@ class DatabaseService {
         date TEXT NOT NULL,
         referenceId TEXT,
         createdAt TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE customer_payments (
+        id TEXT PRIMARY KEY,
+        customerId TEXT NOT NULL,
+        customerName TEXT NOT NULL,
+        amount REAL NOT NULL,
+        paymentMode TEXT NOT NULL,
+        date TEXT NOT NULL,
+        createdAt TEXT NOT NULL
+      )
+    ''');
+    
+    await db.execute('''
+      CREATE TABLE labour_payments (
+        id TEXT PRIMARY KEY,
+        labourId TEXT NOT NULL,
+        labourName TEXT NOT NULL,
+        amount REAL NOT NULL,
+        paymentMode TEXT NOT NULL,
+        date TEXT NOT NULL,
+        createdAt TEXT NOT NULL
       )
     ''');
   }
@@ -181,6 +276,19 @@ class DatabaseService {
       'referenceId': customer.id,
       'createdAt': DateTime.now().toIso8601String(),
     });
+
+    if (customer.depositAmount > 0) {
+      await db.insert('customer_payments', {
+        'id': const Uuid().v4(),
+        'customerId': customer.id,
+        'customerName': customer.name,
+        'amount': customer.depositAmount,
+        'paymentMode': customer.paymentMode ?? 'Cash',
+        'date': DateTime.now().toIso8601String().split('T')[0],
+        'createdAt': DateTime.now().toIso8601String(),
+      });
+    }
+
     return customer.id;
   }
 
@@ -199,6 +307,24 @@ class DatabaseService {
 
   Future<void> updateCustomer(Customer customer) async {
     final db = await database;
+    
+    final oldRecordMaps = await db.query('customers', where: 'id = ?', whereArgs: [customer.id]);
+    if (oldRecordMaps.isNotEmpty) {
+      final oldRecord = Customer.fromMap(oldRecordMaps.first);
+      final diff = customer.depositAmount - oldRecord.depositAmount;
+      if (diff > 0) {
+        await db.insert('customer_payments', {
+          'id': const Uuid().v4(),
+          'customerId': customer.id,
+          'customerName': customer.name,
+          'amount': diff,
+          'paymentMode': customer.paymentMode ?? 'Cash',
+          'date': DateTime.now().toIso8601String().split('T')[0],
+          'createdAt': DateTime.now().toIso8601String(),
+        });
+      }
+    }
+
     await db.update('customers', customer.toMap(), where: 'id = ?', whereArgs: [customer.id]);
     await db.delete('expenses', where: 'referenceId = ?', whereArgs: [customer.id]);
     if (customer.totalAmount > 0) {
@@ -218,6 +344,7 @@ class DatabaseService {
     final db = await database;
     await db.delete('customers', where: 'id = ?', whereArgs: [id]);
     await db.delete('expenses', where: 'referenceId = ?', whereArgs: [id]);
+    await db.delete('customer_payments', where: 'customerId = ?', whereArgs: [id]);
   }
 
   // ─── LABOUR CRUD ─────────────────────────────────────────────────────────────
@@ -225,6 +352,19 @@ class DatabaseService {
   Future<String> insertLabour(Labour labour) async {
     final db = await database;
     await db.insert('labours', labour.toMap());
+    
+    if (labour.totalPaid > 0) {
+      await db.insert('labour_payments', {
+        'id': const Uuid().v4(),
+        'labourId': labour.id,
+        'labourName': labour.name,
+        'amount': labour.totalPaid,
+        'paymentMode': labour.paymentMode ?? 'Cash',
+        'date': DateTime.now().toIso8601String().split('T')[0],
+        'createdAt': DateTime.now().toIso8601String(),
+      });
+    }
+    
     return labour.id;
   }
 
@@ -236,12 +376,31 @@ class DatabaseService {
 
   Future<void> updateLabour(Labour labour) async {
     final db = await database;
+    
+    final oldRecordMaps = await db.query('labours', where: 'id = ?', whereArgs: [labour.id]);
+    if (oldRecordMaps.isNotEmpty) {
+      final oldRecord = Labour.fromMap(oldRecordMaps.first);
+      final diff = labour.totalPaid - oldRecord.totalPaid;
+      if (diff > 0) {
+        await db.insert('labour_payments', {
+          'id': const Uuid().v4(),
+          'labourId': labour.id,
+          'labourName': labour.name,
+          'amount': diff,
+          'paymentMode': labour.paymentMode ?? 'Cash',
+          'date': DateTime.now().toIso8601String().split('T')[0],
+          'createdAt': DateTime.now().toIso8601String(),
+        });
+      }
+    }
+
     await db.update('labours', labour.toMap(), where: 'id = ?', whereArgs: [labour.id]);
   }
 
   Future<void> deleteLabour(String id) async {
     final db = await database;
     await db.delete('labours', where: 'id = ?', whereArgs: [id]);
+    await db.delete('labour_payments', where: 'labourId = ?', whereArgs: [id]);
   }
 
   // ─── FARM DATA CRUD ──────────────────────────────────────────────────────────
@@ -512,5 +671,159 @@ class DatabaseService {
       'totalSoldChicks': soldChicks,
       'averageSoldWeight': averageSoldWeight,
     };
+  }
+
+  // ─── TRANSACTION HISTORY ─────────────────────────────────────────────────────
+  /// Returns a combined, date-sorted list of transactions:
+  /// - Customer payments received (income)
+  /// - Labour wages paid (expense)
+  /// - Medicine purchases (expense)
+  /// - Feed purchases (expense)
+  Future<List<Map<String, dynamic>>> getTransactionHistory() async {
+    final db = await database;
+    final List<Map<String, dynamic>> rows = [];
+
+    // Customer payments received
+    final customerPayments = await db.query('customer_payments', orderBy: 'date DESC');
+    for (final cp in customerPayments) {
+      rows.add({
+        'id': cp['id'],
+        'referenceId': cp['customerId'],
+        'source': 'customer_payments',
+        'date': cp['date'] ?? '',
+        'title': 'Received from ${cp['customerName']}',
+        'amount': (cp['amount'] as num?)?.toDouble() ?? 0,
+        'type': 'income',
+        'paymentMode': cp['paymentMode'] ?? 'Cash',
+        'icon': 'customer',
+      });
+    }
+
+    // Labour wages paid
+    final labourPayments = await db.query('labour_payments', orderBy: 'date DESC');
+    for (final lp in labourPayments) {
+      rows.add({
+        'id': lp['id'],
+        'referenceId': lp['labourId'],
+        'source': 'labour_payments',
+        'date': lp['date'] ?? '',
+        'title': 'Labour paid to ${lp['labourName']}',
+        'amount': (lp['amount'] as num?)?.toDouble() ?? 0,
+        'type': 'expense',
+        'paymentMode': lp['paymentMode'] ?? 'Cash',
+        'icon': 'labour',
+      });
+    }
+
+    // Medicine purchases
+    final medicines = await db.query('medicines', orderBy: 'date DESC');
+    for (final m in medicines) {
+      final cost = (m['cost'] as num?)?.toDouble() ?? 0;
+      if (cost > 0) {
+        rows.add({
+          'id': m['id'],
+          'source': 'medicines',
+          'date': m['date'],
+          'title': 'Medicine: ${m['name']}',
+          'amount': cost,
+          'type': 'expense',
+          'paymentMode': m['paymentMode'] ?? 'Cash',
+          'icon': 'medicine',
+        });
+      }
+    }
+
+    // Feed purchases
+    final feeds = await db.query('feeds', orderBy: 'date DESC');
+    for (final f in feeds) {
+      final cost = (f['cost'] as num?)?.toDouble() ?? 0;
+      if (cost > 0) {
+        rows.add({
+          'id': f['id'],
+          'source': 'feeds',
+          'date': f['date'],
+          'title': 'Feed: ${f['type']}',
+          'amount': cost,
+          'type': 'expense',
+          'paymentMode': f['paymentMode'] ?? 'Cash',
+          'icon': 'feed',
+        });
+      }
+    }
+
+    // Farm data expenses
+    final farmData = await db.query('farm_data', orderBy: 'date DESC');
+    for (final fd in farmData) {
+      final chicksAmt = (fd['chicksAmount'] as num?)?.toDouble() ?? 0;
+      final otherExp = (fd['otherExpenses'] as num?)?.toDouble() ?? 0;
+      
+      if (chicksAmt > 0) {
+        rows.add({
+          'id': fd['id'],
+          'source': 'farm_chicks',
+          'date': fd['date'],
+          'title': 'Chicks Purchase: ${fd['breed']}',
+          'amount': chicksAmt,
+          'type': 'expense',
+          'paymentMode': fd['paymentMode'] ?? 'Cash',
+          'icon': 'farm',
+        });
+      }
+      
+      if (otherExp > 0) {
+        rows.add({
+          'id': fd['id'],
+          'source': 'farm_other',
+          'date': fd['date'],
+          'title': 'Farm Other Expenses',
+          'amount': otherExp,
+          'type': 'expense',
+          'paymentMode': fd['paymentMode'] ?? 'Cash',
+          'icon': 'farm',
+        });
+      }
+    }
+
+    // Sort by date descending
+    rows.sort((a, b) => (b['date'] as String).compareTo(a['date'] as String));
+    return rows;
+  }
+
+  Future<void> deleteTransaction(String id, String source, String? referenceId, double amount) async {
+    final db = await database;
+    if (source == 'customer_payments') {
+      await db.delete('customer_payments', where: 'id = ?', whereArgs: [id]);
+      if (referenceId != null) {
+        await db.execute('UPDATE customers SET depositAmount = MAX(0, depositAmount - ?) WHERE id = ?', [amount, referenceId]);
+      }
+    } else if (source == 'labour_payments') {
+      await db.delete('labour_payments', where: 'id = ?', whereArgs: [id]);
+      if (referenceId != null) {
+        await db.execute('UPDATE labours SET totalPaid = MAX(0, totalPaid - ?) WHERE id = ?', [amount, referenceId]);
+      }
+    } else if (source == 'medicines') {
+      await deleteMedicine(id);
+    } else if (source == 'feeds') {
+      await deleteFeed(id);
+    } else if (source == 'farm_chicks' || source == 'farm_other') {
+      final rows = await db.query('farm_data', where: 'id = ?', whereArgs: [id]);
+      if (rows.isNotEmpty) {
+        final fd = FarmData.fromMap(rows.first);
+        final update = FarmData(
+          id: fd.id,
+          breed: fd.breed,
+          date: fd.date,
+          numberOfChicks: source == 'farm_chicks' ? 0 : fd.numberOfChicks,
+          chicksAmount: source == 'farm_chicks' ? 0 : fd.chicksAmount,
+          medicineAmount: fd.medicineAmount,
+          grainsAmount: fd.grainsAmount,
+          otherExpenses: source == 'farm_other' ? 0 : fd.otherExpenses,
+          notes: fd.notes,
+          paymentMode: fd.paymentMode,
+          createdAt: fd.createdAt,
+        );
+        await updateFarmData(update);
+      }
+    }
   }
 }
